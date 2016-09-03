@@ -17,6 +17,7 @@
 			"AllowedValues": 
 			[
 				"t1.micro",
+				"t2.micro",
 				"t2.small",
 				"t2.medium",
 				"m1.small",
@@ -44,8 +45,12 @@
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": 
 			{
-				"TemplateURL": "https://s3-eu-west-1.amazonaws.com/jyotish-cloudformation/VPC.template"
-			}
+				"TemplateURL": "https://s3-eu-west-1.amazonaws.com/jyotish-cloudformation/VPC.template",
+				"Parameters": 
+				{
+					"KeyName":  { "Ref": "KeyName"}	
+                        }
+	           }
 		},
 		"TestLoadBalancer": 
 		{
@@ -164,39 +169,6 @@
 					}
 				]
 			}
-		},
-		"Type": "AWS::AutoScaling::AutoScalingGroup",
-			"Properties": 
-			{
-				"AvailabilityZones":
-                         [ {"Fn::GetAtt" : [ "vpcStack", "Outputs.AZs" ]}]
-				,
-				"VPCZoneIdentifier": 
-				[
-					
-					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateSubnet1" ] }
-					,
-					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateSubnet2" ] }
-				],
-				"LaunchConfigurationName": 
-				{
-					"Ref": "TestLaunchConfig"
-				},
-		        "LoadBalancerNames": 
-					{
-						"Ref": "TestLoadBalancer"
-					}
-			   ,
-			    "Tags": 
-				[
-					{
-						"Key": "AutoScaling",
-						"Value": 
-						{
-							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"AutoScaling"]] 
-						}
-					}
-				]
 		}
 	},
 	"Outputs": 
