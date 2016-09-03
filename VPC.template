@@ -1,0 +1,657 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": " VPC cloudformation -- https://github.com/markitx/cloud-formation-templates/blob/master/vpc.template",
+	"Parameters": 
+	{
+		"KeyName": 
+		{
+			"Description": "Name of an existing EC2 KeyPair to enable SSH access to the bastion host",
+			"Type": "String",
+			"MinLength": "1",
+			"MaxLength": "64",
+			"AllowedPattern": "[-_ a-zA-Z0-9]*",
+			"ConstraintDescription": "can contain only alphanumeric characters, spaces, dashes and underscores."
+		},
+		"NATamiid": 
+		{
+			"Description": "Name of an NAT Instance id",
+			"Type": "String",
+			"Default": " ami-290f4119"
+		}
+	},
+	"Resources": 
+	{
+		"VPC": 
+		{
+			"Type": "AWS::EC2::VPC",
+			"Properties": 
+			{
+				"CidrBlock": "10.0.0.0/16",
+				"Tags": 
+				[
+					{
+						"Key": "VPCStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "VPC"
+					}
+				]
+			}
+		},
+		"PublicSubnet1": 
+		{
+			"Type": "AWS::EC2::Subnet",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"CidrBlock": "10.0.0.0/24",
+				"AvailabilityZone": 
+				{
+					"Fn::Select": 
+					[
+						"0",
+						{
+							"Fn::GetAZs": 
+							{
+								"Ref": "AWS::Region"
+							}
+						}
+					]
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VPCStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "Public Subnet1"
+					}
+				]
+			}
+		},
+		"PublicSubnet2": 
+		{
+			"Type": "AWS::EC2::Subnet",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"CidrBlock": "10.0.2.0/24",
+				"AvailabilityZone": 
+				{
+					"Fn::Select": 
+					[
+						"1",
+						{
+							"Fn::GetAZs": 
+							{
+								"Ref": "AWS::Region"
+							}
+						}
+					]
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "Public Subnet2"
+					}
+				]
+			}
+		},
+		"InternetGateway": 
+		{
+			"Type": "AWS::EC2::InternetGateway",
+			"Properties": 
+			{
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "InternetGateway"
+					}
+				]
+			}
+		},
+		"GatewayToInternet": 
+		{
+			"Type": "AWS::EC2::VPCGatewayAttachment",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"InternetGatewayId": 
+				{
+					"Ref": "InternetGateway"
+				}
+			}
+		},
+		"PublicRouteTable": 
+		{
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Name",
+						"Value": "PublicRT1"
+					}
+				]
+			}
+		},
+		"PublicRoute": 
+		{
+			"Type": "AWS::EC2::Route",
+			"DependsOn": "GatewayToInternet",
+			"Properties": 
+			{
+				"RouteTableId": 
+				{
+					"Ref": "PublicRouteTable"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"GatewayId": 
+				{
+					"Ref": "InternetGateway"
+				}
+			}
+		},
+		"PublicSubnetRouteTableAssociation1": 
+		{
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": 
+			{
+				"SubnetId": 
+				{
+					"Ref": "PublicSubnet1"
+				},
+				"RouteTableId": 
+				{
+					"Ref": "PublicRouteTable"
+				}
+			}
+		},
+		"PublicSubnetRouteTableAssociation2": 
+		{
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": 
+			{
+				"SubnetId": 
+				{
+					"Ref": "PublicSubnet2"
+				},
+				"RouteTableId": 
+				{
+					"Ref": "PublicRouteTable"
+				}
+			}
+		},
+		"PrivateSubnet1": 
+		{
+			"Type": "AWS::EC2::Subnet",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"CidrBlock": "10.0.1.0/24",
+				"AvailabilityZone": 
+				{
+					"Fn::Select": 
+					[
+						"0",
+						{
+							"Fn::GetAZs": 
+							{
+								"Ref": "AWS::Region"
+							}
+						}
+					]
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Network",
+						"Value": "Private"
+					}
+				]
+			}
+		},
+		"PrivateSubnet2": 
+		{
+			"Type": "AWS::EC2::Subnet",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"CidrBlock": "10.0.3.0/24",
+				"AvailabilityZone": 
+				{
+					"Fn::Select": 
+					[
+						"1",
+						{
+							"Fn::GetAZs": 
+							{
+								"Ref": "AWS::Region"
+							}
+						}
+					]
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Network",
+						"Value": "Private"
+					}
+				]
+			}
+		},
+		"PrivateRouteTable1": 
+		{
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Network",
+						"Value": "Private"
+					}
+				]
+			}
+		},
+		"PrivateRouteTable2": 
+		{
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": 
+			{
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"Tags": 
+				[
+					{
+						"Key": "VCPStack",
+						"Value": 
+						{
+							"Ref": "AWS::StackId"
+						}
+					},
+					{
+						"Key": "Network",
+						"Value": "Private"
+					}
+				]
+			}
+		},
+		"PrivateSubnetRouteTableAssociation1": 
+		{
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": 
+			{
+				"SubnetId": 
+				{
+					"Ref": "PrivateSubnet1"
+				},
+				"RouteTableId": 
+				{
+					"Ref": "PrivateRouteTable1"
+				}
+			}
+		},
+		"PrivateSubnetRouteTableAssociation2": 
+		{
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": 
+			{
+				"SubnetId": 
+				{
+					"Ref": "PrivateSubnet2"
+				},
+				"RouteTableId": 
+				{
+					"Ref": "PrivateRouteTable2"
+				}
+			}
+		},
+		"PrivateRoute1": 
+		{
+			"Type": "AWS::EC2::Route",
+			"Properties": 
+			{
+				"RouteTableId": 
+				{
+					"Ref": "PrivateRouteTable1"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"InstanceId": 
+				{
+					"Ref": "NATDevice1"
+				}
+			}
+		},
+		"PrivateRoute2": 
+		{
+			"Type": "AWS::EC2::Route",
+			"Properties": 
+			{
+				"RouteTableId": 
+				{
+					"Ref": "PrivateRouteTable2"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"InstanceId": 
+				{
+					"Ref": "NATDevice1"
+				}
+			}
+		},
+		"NATIPAddress1": 
+		{
+			"Type": "AWS::EC2::EIP",
+			"DependsOn": "GatewayToInternet",
+			"Properties": 
+			{
+				"Domain": "vpc",
+				"InstanceId": 
+				{
+					"Ref": "NATDevice1"
+				}
+			}
+		},
+		"NATDevice1": 
+		{
+			"Type": "AWS::EC2::Instance",
+			"Properties": 
+			{
+				"InstanceType": "t2.micro",
+				"KeyName": 
+				{
+					"Ref": "KeyName"
+				},
+				"SubnetId": 
+				{
+					"Ref": "PublicSubnet1"
+				},
+				"SourceDestCheck": "false",
+				"ImageId": 
+				{
+					"Ref": "NATamiid"
+				},
+				"SecurityGroupIds": 
+				[
+					{
+						"Ref": "NATSecurityGroup"
+					}
+				],
+				"Tags": 
+				[
+					{
+						"Key": "Name",
+						"Value": "NAT Device"
+					}
+				]
+			}
+		},
+		"NATSecurityGroup": 
+		{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": 
+			{
+				"GroupDescription": "Enable internal access to the NAT device",
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"SecurityGroupIngress": 
+				[
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "80",
+						"ToPort": "80",
+						"CidrIp": "0.0.0.0/0"
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "443",
+						"ToPort": "443",
+						"CidrIp": "0.0.0.0/0"
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "22",
+						"ToPort": "22",
+						"SourceSecurityGroupId": 
+						{
+							"Ref": "BastionSecurityGroup"
+						}
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "1",
+						"ToPort": "65535",
+						"SourceSecurityGroupId": 
+						{
+							"Ref": "InternalSshSecurityGroup"
+						}
+					}
+				],
+				"SecurityGroupEgress": 
+				[
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "1",
+						"ToPort": "65535",
+						"CidrIp": "0.0.0.0/0"
+					}
+				]
+			}
+		},
+		"BastionSecurityGroup": 
+		{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": 
+			{
+				"GroupDescription": "Enable access to the bastion host",
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"SecurityGroupIngress": 
+				[
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "22",
+						"ToPort": "22",
+						"CidrIp": "0.0.0.0/0"
+					}
+				]
+			}
+		},
+		"InternalSshSecurityGroup": 
+		{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": 
+			{
+				"GroupDescription": "Allow ssh access from bastion",
+				"VpcId": 
+				{
+					"Ref": "VPC"
+				},
+				"SecurityGroupIngress": 
+				[
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "22",
+						"ToPort": "22",
+						"SourceSecurityGroupId": 
+						{
+							"Ref": "BastionSecurityGroup"
+						}
+					}
+				],
+				"SecurityGroupEgress": 
+				[
+
+				]
+			}
+		}
+	},
+	"Outputs": 
+	{
+		"VpcId": 
+		{
+			"Description": "VPC",
+			"Value": 
+			{
+				"Ref": "VPC"
+			}
+		},
+		"PublicSubnets": 
+		{
+			"Description": "Public subnet",
+			"Value": 
+			{
+				"Fn::Join": 
+				[
+					",",
+					[
+						{
+							"Ref": "PublicSubnet1"
+						},
+						{
+							"Ref": "PublicSubnet2"
+						}
+					]
+				]
+			}
+		},
+		"PrivateSubnets": 
+		{
+			"Description": "Private subnet",
+			"Value": 
+			{
+				"Fn::Join": 
+				[
+					",",
+					[
+						{
+							"Ref": "PrivateSubnet1"
+						},
+						{
+							"Ref": "PrivateSubnet2"
+						}
+					]
+				]
+			}
+		},
+		"AZs": 
+		{
+			"Description": "Availability zones",
+			"Value": 
+			{
+				"Fn::Join": 
+				[
+					",",
+					[
+						{
+							"Fn::GetAtt": 
+							[
+								"PrivateSubnet1",
+								"AvailabilityZone"
+							]
+						},
+						{
+							"Fn::GetAtt": 
+							[
+								"PrivateSubnet2",
+								"AvailabilityZone"
+							]
+						}
+					]
+				]
+			}
+		},
+		"InternalSshSecurityGroupId": 
+		{
+			"Description": "Internal ssh security group",
+			"Value": 
+			{
+				"Ref": "InternalSshSecurityGroup"
+			}
+		}
+	}
+}

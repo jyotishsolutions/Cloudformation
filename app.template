@@ -1,0 +1,243 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": " App cloudformation",
+	"Parameters":
+	{
+		"TestInstanceAMI": 
+		{
+			"Description": "AMI Image ID for Listener instances.",
+			"Type": "String",
+			"Default": "ami-d732f0b7"
+		},
+		"TestInstanceType": 
+		{
+			"Description": "Listener instance type",
+			"Type": "String",
+			"Default": "t1.micro",
+			"AllowedValues": 
+			[
+				"t1.micro",
+				"t2.small",
+				"t2.medium",
+				"m1.small",
+				"m1.medium",
+				"m3.medium",
+				"m3.large",
+				"m3.xlarge"
+			],
+			"ConstraintDescription": "Must be a valid EC2 instance type."
+		},
+		"KeyName": 
+		{
+			"Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+			"Type": "String",
+			"MinLength": "1",
+			"MaxLength": "64",
+			"AllowedPattern": "[.-_ a-zA-Z0-9]*",
+			"ConstraintDescription": "KeyName can contain only alphanumeric characters, dots, spaces, dashes and underscores."
+		}
+	},
+	"Resources": 
+	{
+		"vpcStack": 
+		{
+			"Type": "AWS::CloudFormation::Stack",
+			"Properties": 
+			{
+				"TemplateURL": "https://s3-eu-west-1.amazonaws.com/cf-templates-msted87iprp7-eu-west-1/VPC.template",
+				"Parameters": 
+				{
+					"CIDRRange": "10.251.0.0"
+				}
+			}
+		},
+		"TestLoadBalancer": 
+		{
+			"Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+			"Properties": 
+			{
+				"SecurityGroups": 
+				[
+					{
+						"Ref": "TestELBSecurityGroup"
+					}
+				],
+				"Subnets": 
+				[
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.SubnetPublicAZ1" ] },
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.SubnetPublicAZ2" ] }
+				],
+				"Listeners": 
+				[
+					{
+						"LoadBalancerPort": "80",
+						"InstancePort": "80",
+						"Protocol": "HTTP"
+					}
+				],
+				"HealthCheck": 
+				{
+					"Target": "HTTP:80/index.html",
+					"HealthyThreshold": "3",
+					"UnhealthyThreshold": "5",
+					"Interval": "6",
+					"Timeout": "5"
+				}
+			},
+			"DependsOn": "TestELBSecurityGroup"
+		},
+		"TestELBSecurityGroup": 
+		{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": 
+			{
+				"GroupDescription": "App Loadbalancer Security Group",
+				"VpcId": { "Fn::GetAtt" : [ "vpcStack", "Outputs.VPCID" ] },
+				"SecurityGroupIngress": 
+				{
+					"IpProtocol": "tcp",
+					"FromPort": "80",
+					"ToPort": "80",
+					"CidrIp": "0.0.0.0/0"
+				},
+				"Tags": 
+				[
+					{
+						"Key": "SecurityName",
+						"Value": 
+						{
+							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"ELBSG"]] 
+						}
+					}
+				]
+			}
+		},
+		"TestLaunchConfig": 
+		{
+			"Type": "AWS::AutoScaling::LaunchConfiguration",
+			"Properties": 
+			{
+				"ImageId": 
+				{
+					"Ref": "TestInstanceAMI"
+				},
+				"InstanceType": 
+				{
+					"Ref": "TestInstanceType"
+				},
+				"SecurityGroups": 
+				[
+					{
+						"Ref": "TestInstanceSecurityGroup"
+					}
+				],
+				"KeyName": 
+				{
+					"Ref": "KeyName"
+				},
+				"InstanceMonitoring": "true"
+			}
+		},
+		"TestInstanceSecurityGroup": 
+		{
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": 
+			{
+				"GroupDescription": "SG for wpplatform CMA",
+				"VpcId": { "Fn::GetAtt" : [ "vpcStack", "Outputs.VPCID" ] },
+				"SecurityGroupIngress": 
+				[
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "80",
+						"ToPort": "80",
+						"SourceSecurityGroupId": 
+						{
+							"Ref": "TestELBSecurityGroup"
+						}
+					}
+				],
+				"Tags": 
+				[
+					{
+						"Key": "ELBSecurityGroup",
+						"Value": 
+						{
+							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"LaunchConfig"]] 
+						}
+					}
+				]
+			}
+		},
+		"Type": "AWS::AutoScaling::AutoScalingGroup",
+			"DependsOn": "RDSInstance",
+			"Properties": 
+			{
+				"AvailabilityZones": 
+				[
+					{
+						"Fn::Select": 
+						[
+							0,
+							{
+								"Fn::GetAZs": ""
+							}
+						]
+					},
+					{
+						"Fn::Select": 
+						[
+							1,
+							{
+								"Fn::GetAZs": ""
+							}
+						]
+					}
+				],
+				"VPCZoneIdentifier": 
+				[
+					
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.SubnetPrivateAZ1" ] }
+					,
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.SubnetPrivateAZ1" ] }
+				],
+				"LaunchConfigurationName": 
+				{
+					"Ref": "TestLaunchConfig"
+				},
+		        "LoadBalancerNames": 
+				[
+					{
+						"Ref": "TestLoadBalancer"
+					}
+				],
+			    "Tags": 
+				[
+					{
+						"Key": "AutoScaling",
+						"Value": 
+						{
+							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"AutoScaling"]] 
+						}
+					}
+				]
+		}
+	},
+	"Outputs": 
+	{
+		"appStackRef": 
+		{
+			"Value": 
+			{
+				"Ref": "TestELBSecurityGroup"
+			}
+		},
+		"accessStackRef": 
+		{
+			"Value": 
+			{
+				"Ref": "TestLoadBalancer"
+			}
+		}
+	}
+}
