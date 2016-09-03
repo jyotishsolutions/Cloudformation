@@ -639,6 +639,30 @@
 				]
 			}
 		},
+		"PrivateAZ1": 
+		{
+			"Description": "Availability zones",
+			"Value": 
+				{
+							"Fn::GetAtt": 
+							[
+								"PrivateSubnet1",
+								"AvailabilityZone"
+							]
+				}
+		},
+		"PrivateAZ2": 
+		{
+			"Description": "Availability zones",
+			"Value": 
+			{
+							"Fn::GetAtt": 
+							[
+								"PrivateSubnet2",
+								"AvailabilityZone"
+							]
+				}	
+		},
 		"InternalSshSecurityGroupId": 
 		{
 			"Description": "Internal ssh security group",

@@ -7,7 +7,7 @@
 		{
 			"Description": "AMI Image ID for Listener instances.",
 			"Type": "String",
-			"Default": "ami-ed82e39e"
+			"Default": "ami-d13343a2"
 		},
 		"TestInstanceType": 
 		{
@@ -169,7 +169,69 @@
 					}
 				]
 			}
-		}
+		},
+		"TestASG":
+		{
+		"Type": "AWS::AutoScaling::AutoScalingGroup",
+			"Properties": 
+			{
+				"AvailabilityZones":   
+				[
+					{
+						"Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateAZ1" ]
+					},
+					{
+						"Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateAZ2" ]
+					}
+				],
+				"VPCZoneIdentifier": 
+				[
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateSubnet1" ] }
+					,
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PrivateSubnet2" ] }
+				],
+				"LaunchConfigurationName": 
+				{
+					"Ref": "TestLaunchConfig"
+				},
+		        "LoadBalancerNames": 
+				[	{
+						"Ref": "TestLoadBalancer"
+					}
+				],
+			 "MinSize" : "1",
+			"MaxSize" : "2",
+			"DesiredCapacity" :"1",
+			    "Tags": 
+				[
+					{
+						"Key": "AutoScaling",
+						"Value": 
+						{
+							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"AutoScaling"]] 
+						},
+						"PropagateAtLaunch" : "false"
+					}
+				]
+			}
+		},
+		"myDNS" : {
+        "Type" : "AWS::Route53::RecordSetGroup",
+        "Properties" : {
+          "HostedZoneId":"Z1DL8O37I7DHYV",
+          "Comment" : "Zone apex alias targeted to myELB LoadBalancer.",
+          "RecordSets" : [
+            {
+              "Name" : "xxxxxxxxx.co.uk",
+              "Type" : "A",
+              "AliasTarget" : {
+                  "HostedZoneId" : { "Fn::GetAtt" : ["TestLoadBalancer", "CanonicalHostedZoneNameID"] },
+                  "DNSName" : { "Fn::GetAtt" : ["TestLoadBalancer","DNSName"] }
+              }
+            }
+          ]
+        }
+	}
 	},
 	"Outputs": 
 	{
