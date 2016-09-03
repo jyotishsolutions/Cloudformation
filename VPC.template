@@ -16,7 +16,7 @@
 		{
 			"Description": "Name of an NAT Instance id",
 			"Type": "String",
-			"Default": " ami-290f4119"
+			"Default": "ami-14913f63"
 		}
 	},
 	"Resources": 
@@ -580,44 +580,38 @@
 				"Ref": "VPC"
 			}
 		},
-		"PublicSubnets": 
+		"PublicSubnet1": 
 		{
-			"Description": "Public subnet",
+			"Description": "Public subnet1",
 			"Value": 
 			{
-				"Fn::Join": 
-				[
-					",",
-					[
-						{
 							"Ref": "PublicSubnet1"
-						},
-						{
-							"Ref": "PublicSubnet2"
-						}
-					]
-				]
 			}
 		},
-		"PrivateSubnets": 
+		"PublicSubnet2": 
 		{
-			"Description": "Private subnet",
+			"Description": "Public subnet2",
 			"Value": 
-			{
-				"Fn::Join": 
-				[
-					",",
-					[
-						{
-							"Ref": "PrivateSubnet1"
-						},
-						{
-							"Ref": "PrivateSubnet2"
-						}
-					]
-				]
-			}
+				{
+							"Ref": "PublicSubnet2"
+				}
 		},
+		"PrivateSubnet1": 
+		{
+			"Description": "Private subnet1",
+			"Value":
+				{
+							"Ref": "PrivateSubnet1"
+				}
+		},
+		"PrivateSubnet2": 
+		{
+			"Description": "Private subnet2",
+			"Value":
+				{
+							"Ref": "PrivateSubnet2"
+				}
+		},	
 		"AZs": 
 		{
 			"Description": "Availability zones",
