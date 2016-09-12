@@ -7,7 +7,7 @@
 		{
 			"Description": "AMI Image ID for Listener instances.",
 			"Type": "String",
-			"Default": "ami-aa136dd9"
+			"Default": "ami-b2205dc1"
 		},
 		"TestInstanceType": 
 		{
@@ -137,8 +137,7 @@
 				{
 					"Ref": "KeyName"
 				},
-				"InstanceMonitoring": "true",
-				 "AssociatePublicIpAddress": true
+				"InstanceMonitoring": "true"
 			}
 		},
 		"TestInstanceSecurityGroup": 
@@ -190,7 +189,7 @@
 				[
 					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PublicSubnet1" ] }
 					,
-					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PublicSubnet2" ] }
+					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PublicSubnet1" ] }
 				],
 				"LaunchConfigurationName": 
 				{
@@ -213,6 +212,23 @@
 							"Fn::Join": ["",[{"Ref": "AWS::StackName"},"AutoScaling"]] 
 						},
 						"PropagateAtLaunch" : "false"
+					}
+				]
+			}
+		},
+		"myDNS" : {
+			"Type" : "AWS::Route53::RecordSetGroup",
+			"Properties" : {
+				"HostedZoneId":"Z1DL8O37I7DHYV",
+				"Comment" : "Zone apex alias targeted to myELB LoadBalancer.",
+				"RecordSets" : [
+					{
+						"Name" : "xxxxxxxxx.co.uk",
+						"Type" : "A",
+						"AliasTarget" : {
+							"HostedZoneId" : { "Fn::GetAtt" : ["TestLoadBalancer", "CanonicalHostedZoneNameID"] },
+							"DNSName" : { "Fn::GetAtt" : ["TestLoadBalancer","DNSName"] }
+						}
 					}
 				]
 			}
@@ -261,82 +277,7 @@
 		},
 		"Roles": [ { "Ref": "WebAppRole" } ]
 		}
-	  } ,
-	  "myDNS" : {
-			"Type" : "AWS::Route53::RecordSetGroup",
-			"Properties" : {
-				"HostedZoneId":"Z1DL8O37I7DHYV",
-				"Comment" : "Zone apex alias targeted to myELB LoadBalancer.",
-				"RecordSets" : [
-					{
-						"Name" : "jyotishsolutions.co.uk",
-						"Type" : "A",
-						"AliasTarget" : {
-							"HostedZoneId" : { "Fn::GetAtt" : ["TestLoadBalancer", "CanonicalHostedZoneNameID"] },
-							"DNSName" : { "Fn::GetAtt" : ["TestLoadBalancer","DNSName"] }
-						}
-					}
-				]
-			}
-		},
-		"RDSInstance" : {
-		"Type" : "AWS::RDS::DBInstance",
-		"DeletionPolicy" : "Snapshot",
-		"Properties" : {
-			"Engine" : "MySQL",
-			"EngineVersion" : "5.6.23",
-			"DBInstanceIdentifier" : "testdb",
-			"BackupRetentionPeriod" : "7",
-			"PreferredBackupWindow" : "00:00-02:00",
-			"PreferredMaintenanceWindow": "Sun:03:30-Sun:04:00",
-			"AllowMajorVersionUpgrade" : "true",
-			"AutoMinorVersionUpgrade" : "true",
-			"DBName" : {"Fn::Join": ["",[{"Ref": "AWS::StackName"},"db"]] },
-			"MultiAZ" : "false",
-			"PubliclyAccessible": "true",
-			"MasterUsername" :  "root",
-			"MasterUserPassword" :"changeme!",
-			"DBInstanceClass" : "db.t2.micro",
-			"VPCSecurityGroups" : [ {
-				"Ref" : "DBSecurityGroup"
-			} ],
-			"AllocatedStorage" : "5",
-			"DBSubnetGroupName" : {
-			"Ref" : "DBSubnetGroup"
-		},
-		"Tags" : [
-				{ "Key" : "Name", "Value" : "DBName"}
-			]
-		}
-	},
-	"DBSubnetGroup" : {
-		"Type" : "AWS::RDS::DBSubnetGroup",
-		"Properties" : {
-		"DBSubnetGroupDescription" : "Subnet group for the RDS instance",
-		"SubnetIds" :  [ 
-				{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PublicSubnet1" ] },
-					{ "Fn::GetAtt" : [ "vpcStack", "Outputs.PublicSubnet2" ] }
-				]
-		}
-	},
-	"DBSecurityGroup" : {
-		"Type" : "AWS::EC2::SecurityGroup",
-		"Properties" : {
-		"GroupDescription" : "Test Database Security Group",
-		"VpcId" : { "Fn::GetAtt" : [ "vpcStack", "Outputs.VpcId" ] } 
-		},
-		"DependsOn":"TestInstanceSecurityGroup"
-	},
-	"DBSecurityGroupTestIngress" : {
-      "Type" : "AWS::EC2::SecurityGroupIngress",
-      "Properties" : {
-		"GroupId" : { "Ref" : "DBSecurityGroup" },
-		"IpProtocol" : "tcp",
-		"FromPort" : "3306",
-		"ToPort" : "3306",
-		"SourceSecurityGroupId": { "Ref" : "TestInstanceSecurityGroup" }
-		}
-	}
+	  } 
     }, 
     "Outputs": 
 	{

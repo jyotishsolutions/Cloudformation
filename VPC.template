@@ -27,6 +27,8 @@
 			"Properties": 
 			{
 				"CidrBlock": "10.0.0.0/16",
+				"EnableDnsSupport" : "true",
+				"EnableDnsHostnames" : "true",
 				"Tags": 
 				[
 					{
@@ -659,6 +661,30 @@
 							"Fn::GetAtt": 
 							[
 								"PrivateSubnet2",
+								"AvailabilityZone"
+							]
+				}	
+		},
+		"PublicAZ1": 
+		{
+			"Description": "Availability zones",
+			"Value": 
+				{
+							"Fn::GetAtt": 
+							[
+								"PublicSubnet1",
+								"AvailabilityZone"
+							]
+				}
+		},
+		"PublicAZ2": 
+		{
+			"Description": "Availability zones",
+			"Value": 
+			{
+							"Fn::GetAtt": 
+							[
+								"PublicSubnet2",
 								"AvailabilityZone"
 							]
 				}	
