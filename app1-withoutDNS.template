@@ -265,24 +265,7 @@
 		"Roles": [ { "Ref": "WebAppRole" } ]
 		}
 	  } ,
-	  "myDNS" : {
-			"Type" : "AWS::Route53::RecordSetGroup",
-			"Properties" : {
-				"HostedZoneId":"Z1DL8O37I7DHYV",
-				"Comment" : "Zone apex alias targeted to myELB LoadBalancer.",
-				"RecordSets" : [
-					{
-						"Name" : "jyotishsolutions.co.uk",
-						"Type" : "A",
-						"AliasTarget" : {
-							"HostedZoneId" : { "Fn::GetAtt" : ["TestLoadBalancer", "CanonicalHostedZoneNameID"] },
-							"DNSName" : { "Fn::GetAtt" : ["TestLoadBalancer","DNSName"] }
-						}
-					}
-				]
-			}
-		},
-		"RDSInstance" : {
+	  "RDSInstance" : {
 		"Type" : "AWS::RDS::DBInstance",
 		"DeletionPolicy" : "Snapshot",
 		"Properties" : {
@@ -295,6 +278,7 @@
 			"AllowMajorVersionUpgrade" : "true",
 			"AutoMinorVersionUpgrade" : "true",
 			"DBName" : {"Fn::Join": ["",[{"Ref": "AWS::StackName"},"db"]] },
+			"DBSnapshotIdentifier" :  { "Ref" : "AWS::NoValue"},
 			"MultiAZ" : "false",
 			"PubliclyAccessible": "true",
 			"MasterUsername" :  "root",
